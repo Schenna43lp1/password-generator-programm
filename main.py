@@ -1,9 +1,14 @@
+"""Moderner Passwort-Generator mit GUI.
+
+Ein sicherer Passwort-Generator mit tkinter GUI, der kryptographisch sichere
+Passwörter mit konfigurierbarer Länge und Zeichenarten erstellt.
+"""
 import tkinter as tk
 from tkinter import messagebox
-import random
+import secrets
 import string
 from dataclasses import dataclass
-from typing import Set
+from typing import Set, Tuple
 from enum import Enum
 
 
@@ -13,6 +18,7 @@ class CharType(Enum):
     LOWERCASE = (string.ascii_lowercase, "Kleinbuchstaben", "a-z")
     DIGITS = (string.digits, "Zahlen", "0-9")
     SPECIAL = (string.punctuation, "Sonderzeichen", "!@#$...")
+    WHITESPACE = (" ", "Leerzeichen", " ")
 
     def __init__(self, chars: str, label: str, hint: str):
         self.chars = chars
@@ -20,9 +26,12 @@ class CharType(Enum):
         self.hint = hint
 
 
-@dataclass
+@dataclass(frozen=True)
 class Theme:
-    """Dark Mode Theme Konfiguration."""
+    """Dark Mode Theme Konfiguration.
+    
+    Immutable Dataclass mit allen Farbdefinitionen für das UI.
+    """
     bg_primary: str = "#1e1e2e"
     bg_secondary: str = "#2a2a3e"
     bg_hover: str = "#3a3a4e"
@@ -46,43 +55,54 @@ class PasswordGenerator:
     @staticmethod
     def generate(length: int, char_types: Set[CharType]) -> str:
         """
-        Generiert ein sicheres Passwort.
+        Generiert ein kryptographisch sicheres Passwort.
 
         Args:
-            length: Länge des Passworts
+            length: Länge des Passworts (MIN_LENGTH bis MAX_LENGTH)
             char_types: Set von CharType Enums
 
         Returns:
             Generiertes Passwort
 
         Raises:
-            ValueError: Wenn keine Zeichentypen ausgewählt wurden
+            ValueError: Wenn keine Zeichentypen ausgewählt wurden oder
+                       Länge außerhalb des gültigen Bereichs liegt
         """
         if not char_types:
             raise ValueError("Mindestens ein Zeichentyp muss ausgewählt werden")
+        
+        if not PasswordGenerator.MIN_LENGTH <= length <= PasswordGenerator.MAX_LENGTH:
+            raise ValueError(
+                f"Länge muss zwischen {PasswordGenerator.MIN_LENGTH} "
+                f"und {PasswordGenerator.MAX_LENGTH} liegen"
+            )
 
         char_pool = ''.join(ct.chars for ct in char_types)
 
         # Sicherstellen, dass mindestens ein Zeichen jedes Typs vorhanden ist
-        password = [random.choice(ct.chars) for ct in char_types]
+        password = [secrets.choice(ct.chars) for ct in char_types]
 
         # Auffüllen auf gewünschte Länge
         remaining = length - len(password)
-        password.extend(random.choice(char_pool) for _ in range(remaining))
+        password.extend(secrets.choice(char_pool) for _ in range(remaining))
 
-        # Zufällig mischen
-        random.shuffle(password)
+        # Kryptographisch sicher mischen
+        secrets.SystemRandom().shuffle(password)
 
         return ''.join(password)
 
     @staticmethod
-    def calculate_strength(password: str) -> tuple[int, str]:
+    def calculate_strength(password: str) -> Tuple[int, str]:
         """
         Berechnet die Stärke eines Passworts.
-
+        
+        Args:
+            password: Das zu bewertende Passwort
+            
         Returns:
-            Tuple von (Stärke 0-100, Beschreibung)
+            Tuple aus (Stärke-Score 0-100, Beschreibung)
         """
+
         if not password:
             return 0, "Kein Passwort"
 
@@ -114,9 +134,14 @@ class PasswordGenerator:
 
 
 class ModernButton(tk.Button):
-    """Custom Button mit Hover-Effekt."""
+    """Custom Button mit Hover-Effekt.
+    
+    Erweiterter tkinter Button mit animierten Hover-Effekten und
+    Theme-Integration.
+    """
 
-    def __init__(self, parent, theme: Theme, hover_color: str = None, **kwargs):
+    def __init__(self, parent: tk.Widget, theme: Theme, 
+                 hover_color: str = None, **kwargs) -> None:
         self.theme = theme
         self.default_bg = kwargs.get('bg', theme.bg_hover)
         self.hover_bg = hover_color or theme.bg_dark
@@ -133,19 +158,26 @@ class ModernButton(tk.Button):
         self.bind("<Enter>", self._on_enter)
         self.bind("<Leave>", self._on_leave)
 
-    def _on_enter(self, e):
+    def _on_enter(self, event: tk.Event) -> None:
+        """Event-Handler für Maus-Enter."""
         if self['state'] != tk.DISABLED:
             self.config(bg=self.hover_bg)
 
-    def _on_leave(self, e):
+    def _on_leave(self, event: tk.Event) -> None:
+        """Event-Handler für Maus-Leave."""
         if self['state'] != tk.DISABLED:
             self.config(bg=self.default_bg)
 
 
 class PasswordGeneratorGUI:
-    """Hauptanwendung mit GUI."""
+    """Hauptanwendung mit GUI.
+    
+    Tkinter-basierte grafische Benutzeroberfläche für den Passwort-Generator.
+    Verwaltet alle UI-Komponenten, Benutzerinteraktionen und die Integration
+    mit der PasswordGenerator-Klasse.
+    """
 
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.theme = Theme()
         self.generator = PasswordGenerator()
@@ -154,14 +186,20 @@ class PasswordGeneratorGUI:
         self._setup_window()
         self._create_widgets()
 
-    def _setup_window(self):
+    def _setup_window(self) -> None:
         """Initialisiert das Hauptfenster."""
         self.root.title("Passwort-Generator Pro")
         self.root.geometry("600x650")
         self.root.resizable(False, False)
         self.root.configure(bg=self.theme.bg_primary)
+        
+        # Icon setzen (falls vorhanden)
+        try:
+            self.root.iconbitmap(default='icon.ico')
+        except tk.TclError:
+            pass  # Icon nicht gefunden, ignorieren
 
-    def _create_widgets(self):
+    def _create_widgets(self) -> None:
         """Erstellt alle GUI-Komponenten."""
         main_frame = tk.Frame(self.root, bg=self.theme.bg_primary, padx=40, pady=35)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -173,7 +211,7 @@ class PasswordGeneratorGUI:
         self._create_result_section(main_frame)
         self._create_strength_indicator(main_frame)
 
-    def _create_header(self, parent):
+    def _create_header(self, parent: tk.Frame) -> None:
         """Erstellt Header mit Titel."""
         header = tk.Frame(parent, bg=self.theme.bg_primary)
         header.pack(pady=(0, 30))
@@ -194,7 +232,7 @@ class PasswordGeneratorGUI:
             bg=self.theme.bg_primary
         ).pack(pady=(8, 0))
 
-    def _create_length_section(self, parent):
+    def _create_length_section(self, parent: tk.Frame) -> None:
         """Erstellt Längen-Slider."""
         container = self._create_section_container(parent)
 
@@ -236,7 +274,7 @@ class PasswordGeneratorGUI:
         )
         self.length_slider.pack(fill=tk.X)
 
-    def _create_options_section(self, parent):
+    def _create_options_section(self, parent: tk.Frame) -> None:
         """Erstellt Checkbox-Optionen."""
         container = self._create_section_container(parent)
 
@@ -266,7 +304,7 @@ class PasswordGeneratorGUI:
                 bd=0
             ).pack(anchor=tk.W, pady=4)
 
-    def _create_generate_button(self, parent):
+    def _create_generate_button(self, parent: tk.Frame) -> None:
         """Erstellt Generieren-Button."""
         self.gen_button = ModernButton(
             parent,
@@ -281,7 +319,7 @@ class PasswordGeneratorGUI:
         )
         self.gen_button.pack(fill=tk.X, pady=(25, 0))
 
-    def _create_result_section(self, parent):
+    def _create_result_section(self, parent: tk.Frame) -> None:
         """Erstellt Ergebnis-Anzeige."""
         container = self._create_section_container(parent)
 
@@ -339,7 +377,7 @@ class PasswordGeneratorGUI:
         )
         self.clear_button.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-    def _create_strength_indicator(self, parent):
+    def _create_strength_indicator(self, parent: tk.Frame) -> None:
         """Erstellt Stärke-Anzeige."""
         container = tk.Frame(parent, bg=self.theme.bg_secondary, pady=15, padx=18)
         container.pack(fill=tk.X, pady=(20, 0))
@@ -368,7 +406,7 @@ class PasswordGeneratorGUI:
         )
         self.strength_label.pack(anchor=tk.W)
 
-    def _create_section_container(self, parent):
+    def _create_section_container(self, parent: tk.Frame) -> tk.Frame:
         """Erstellt einen Section-Container."""
         container = tk.Frame(
             parent,
@@ -379,12 +417,12 @@ class PasswordGeneratorGUI:
         container.pack(fill=tk.X, pady=(0, 20))
         return container
 
-    def _update_length_label(self, value):
+    def _update_length_label(self, value: str) -> None:
         """Aktualisiert Label bei Slider-Änderung."""
         self.length_label.config(text=str(int(float(value))))
 
-    def _generate_password(self):
-        """Generiert ein neues Passwort."""
+    def _generate_password(self) -> None:
+        """Generiert ein neues Passwort und zeigt es in einem Popup an."""
         try:
             selected_types = {ct for ct, var in self.char_vars.items() if var.get()}
 
@@ -506,12 +544,18 @@ class PasswordGeneratorGUI:
                 pady=12
             ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
 
+        except ValueError as e:
+            messagebox.showwarning(
+                "Ungültige Eingabe",
+                str(e),
+                parent=self.root
+            )
         except Exception as e:
             import traceback
-            error_msg = f"Fehler beim Generieren:\n\n{str(e)}\n\n{traceback.format_exc()}"
+            error_msg = f"Unerwarteter Fehler:\n\n{str(e)}\n\n{traceback.format_exc()}"
             messagebox.showerror("Fehler", error_msg, parent=self.root)
 
-    def _update_strength_indicator(self, password: str):
+    def _update_strength_indicator(self, password: str) -> None:
         """Aktualisiert die Stärke-Anzeige."""
         strength, description = self.generator.calculate_strength(password)
 
@@ -531,7 +575,7 @@ class PasswordGeneratorGUI:
 
         self.strength_label.config(text=description, fg=color)
 
-    def _copy_password(self):
+    def _copy_password(self) -> None:
         """Kopiert Passwort in Zwischenablage."""
         password = self.password_text.get(1.0, tk.END).strip()
         if password:
@@ -547,9 +591,13 @@ class PasswordGeneratorGUI:
                     text=original, bg=original_bg
                 ))
             except Exception as e:
-                messagebox.showerror("Fehler", f"Kopieren fehlgeschlagen: {e}")
+                messagebox.showerror(
+                    "Fehler",
+                    f"Kopieren fehlgeschlagen: {e}",
+                    parent=self.root
+                )
 
-    def _clear_password(self):
+    def _clear_password(self) -> None:
         """Löscht das angezeigte Passwort."""
         self.password_text.config(state=tk.NORMAL)
         self.password_text.delete(1.0, tk.END)
@@ -563,11 +611,18 @@ class PasswordGeneratorGUI:
         )
 
 
-def main():
+def main() -> None:
     """Haupteinstiegspunkt der Anwendung."""
-    root = tk.Tk()
-    app = PasswordGeneratorGUI(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        app = PasswordGeneratorGUI(root)
+        root.mainloop()
+    except Exception as e:
+        import traceback
+        print(f"Kritischer Fehler beim Start der Anwendung:\n{e}\n")
+        print(traceback.format_exc())
+        import sys
+        sys.exit(1)
 
 
 if __name__ == "__main__":
