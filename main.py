@@ -360,7 +360,7 @@ class PasswordGeneratorGUI:
     def _setup_window(self) -> None:
         """Initialisiert das Hauptfenster."""
         self.root.title("🔐 Passwort-Generator Pro")
-        self.root.geometry("900x900")
+        self.root.geometry("955x900")
         self.root.resizable(True, True)
         self.root.configure(bg=self.theme.bg_primary)
         
@@ -371,7 +371,7 @@ class PasswordGeneratorGUI:
         self.root.geometry(f"+{x}+{y}")
         
         # Minimum Size setzen
-        self.root.minsize(700, 800)
+        self.root.minsize(850, 800)
         
         # Icon setzen (falls vorhanden)
         try:
@@ -394,15 +394,24 @@ class PasswordGeneratorGUI:
         canvas = tk.Canvas(self.root, bg=self.theme.bg_primary, highlightthickness=0)
         scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview, bg=self.theme.bg_secondary)
         
-        main_frame = tk.Frame(canvas, bg=self.theme.bg_primary, padx=40, pady=30)
+        main_frame = tk.Frame(canvas, bg=self.theme.bg_primary, padx=40, pady=30, width=750)
         
         main_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
         
-        canvas.create_window((0, 0), window=main_frame, anchor="nw")
+        # Zentriertes Window
+        canvas_window = canvas.create_window((0, 0), window=main_frame, anchor="n")
         canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Canvas update für Zentrierung
+        def _center_window(event=None):
+            canvas.update_idletasks()
+            canvas_width = canvas.winfo_width()
+            canvas.coords(canvas_window, canvas_width // 2, 0)
+        
+        canvas.bind('<Configure>', lambda e: _center_window())
         
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
