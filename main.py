@@ -245,6 +245,10 @@ class PasswordPreset:
         "Passphrase": {
             "length": 20,
             "types": {CharType.UPPERCASE, CharType.LOWERCASE, CharType.WHITESPACE}
+        },
+        "Lange Passphrase": {
+            "length": 40,
+            "types": {CharType.UPPERCASE, CharType.LOWERCASE, CharType.WHITESPACE}
         }
     }
 
@@ -257,7 +261,7 @@ class ToolTip:
         self.text = text
         self.theme = theme
         self.tooltip_window = None
-        
+
         widget.bind("<Enter>", self._show_tooltip)
         widget.bind("<Leave>", self._hide_tooltip)
     
@@ -356,7 +360,7 @@ class PasswordGeneratorGUI:
     def _setup_window(self) -> None:
         """Initialisiert das Hauptfenster."""
         self.root.title("🔐 Passwort-Generator Pro")
-        self.root.geometry("750x900")
+        self.root.geometry("900x900")
         self.root.resizable(True, True)
         self.root.configure(bg=self.theme.bg_primary)
         
@@ -371,7 +375,7 @@ class PasswordGeneratorGUI:
         
         # Icon setzen (falls vorhanden)
         try:
-            self.root.iconbitmap(default='icon.ico')
+            self.root.iconbitmap(default='app.ico')
         except tk.TclError:
             pass  # Icon nicht gefunden, ignorieren
         
