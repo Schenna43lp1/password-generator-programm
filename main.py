@@ -53,6 +53,9 @@ class PasswordGenerator:
     MIN_LENGTH = 8
     MAX_LENGTH = 64
     DEFAULT_LENGTH = 16
+    
+    # Cache für Character-Pools
+    _char_pool_cache = {}
 
     @staticmethod
     def generate(length: int, char_types: Set[CharType]) -> str:
@@ -79,19 +82,32 @@ class PasswordGenerator:
                 f"und {PasswordGenerator.MAX_LENGTH} liegen"
             )
 
-        char_pool = ''.join(ct.chars for ct in char_types)
+        # Cache-Key für char_pool
+        cache_key = frozenset(char_types)
+        if cache_key not in PasswordGenerator._char_pool_cache:
+            PasswordGenerator._char_pool_cache[cache_key] = ''.join(ct.chars for ct in char_types)
+        
+        char_pool = PasswordGenerator._char_pool_cache[cache_key]
+        char_types_list = list(char_types)
 
         # Sicherstellen, dass mindestens ein Zeichen jedes Typs vorhanden ist
-        password = [secrets.choice(ct.chars) for ct in char_types]
+        password = [secrets.choice(ct.chars) for ct in char_types_list]
 
-        # Auffüllen auf gewünschte Länge
+        # Auffüllen auf gewünschte Länge - optimiert mit list comprehension
         remaining = length - len(password)
-        password.extend(secrets.choice(char_pool) for _ in range(remaining))
+        if remaining > 0:
+            password.extend(secrets.choice(char_pool) for _ in range(remaining))
 
         # Kryptographisch sicher mischen
         secrets.SystemRandom().shuffle(password)
 
         return ''.join(password)
+
+    # Vorkompilierte Sets für schnellere Prüfungen
+    _UPPERCASE_SET = frozenset(string.ascii_uppercase)
+    _LOWERCASE_SET = frozenset(string.ascii_lowercase)
+    _DIGIT_SET = frozenset(string.digits)
+    _PUNCTUATION_SET = frozenset(string.punctuation)
 
     @staticmethod
     def calculate_strength(password: str) -> Tuple[int, str]:
@@ -104,7 +120,6 @@ class PasswordGenerator:
         Returns:
             Tuple aus (Stärke-Score 0-100, Beschreibung)
         """
-
         if not password:
             return 0, "Kein Passwort"
 
@@ -114,14 +129,15 @@ class PasswordGenerator:
         # Länge bewerten
         strength += min(length * 2, 40)
 
-        # Zeichenvielfalt bewerten
-        if any(c.isupper() for c in password):
+        # Zeichenvielfalt bewerten - single pass durch password
+        password_set = set(password)
+        if password_set & PasswordGenerator._UPPERCASE_SET:
             strength += 15
-        if any(c.islower() for c in password):
+        if password_set & PasswordGenerator._LOWERCASE_SET:
             strength += 15
-        if any(c.isdigit() for c in password):
+        if password_set & PasswordGenerator._DIGIT_SET:
             strength += 15
-        if any(c in string.punctuation for c in password):
+        if password_set & PasswordGenerator._PUNCTUATION_SET:
             strength += 15
 
         # Beschreibung
@@ -152,26 +168,30 @@ class ToolTip:
         if self.tooltip_window or not self.text:
             return
         
-        x = self.widget.winfo_rootx() + 20
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+        # Verzögertes Rendern für bessere Performance
+        def create_tooltip():
+            x = self.widget.winfo_rootx() + 20
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+            
+            self.tooltip_window = tw = tk.Toplevel(self.widget)
+            tw.wm_overrideredirect(True)
+            tw.wm_geometry(f"+{x}+{y}")
+            
+            label = tk.Label(
+                tw,
+                text=self.text,
+                justify=tk.LEFT,
+                background=self.theme.bg_hover,
+                foreground=self.theme.text_primary,
+                relief=tk.SOLID,
+                borderwidth=1,
+                font=("Segoe UI", 9),
+                padx=8,
+                pady=4
+            )
+            label.pack()
         
-        self.tooltip_window = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)
-        tw.wm_geometry(f"+{x}+{y}")
-        
-        label = tk.Label(
-            tw,
-            text=self.text,
-            justify=tk.LEFT,
-            background=self.theme.bg_hover,
-            foreground=self.theme.text_primary,
-            relief=tk.SOLID,
-            borderwidth=1,
-            font=("Segoe UI", 9),
-            padx=8,
-            pady=4
-        )
-        label.pack()
+        self.widget.after_idle(create_tooltip)
     
     def _hide_tooltip(self, event: tk.Event = None) -> None:
         """Versteckt Tooltip."""
@@ -525,7 +545,11 @@ class PasswordGeneratorGUI:
 
     def _update_length_label(self, value: str) -> None:
         """Aktualisiert Label bei Slider-Änderung."""
-        self.length_label.config(text=str(int(float(value))))
+        # Direkte Integer-Konvertierung ohne String-Zwischenschritt
+        int_value = int(float(value))
+        if not hasattr(self, '_last_length_value') or self._last_length_value != int_value:
+            self._last_length_value = int_value
+            self.length_label.config(text=str(int_value))
 
     def _generate_password(self) -> None:
         """Generiert ein neues Passwort und zeigt es in einem Popup an."""
@@ -678,20 +702,20 @@ class PasswordGeneratorGUI:
         """Aktualisiert die Stärke-Anzeige."""
         strength, description = self.generator.calculate_strength(password)
 
-        # Farbe basierend auf Stärke
-        if strength >= 80:
-            color = self.theme.success
-        elif strength >= 60:
-            color = self.theme.accent
-        elif strength >= 40:
-            color = self.theme.warning
-        else:
-            color = self.theme.danger
+        # Farbe basierend auf Stärke - optimiert mit dict-lookup
+        color_map = {
+            (80, 101): self.theme.success,
+            (60, 80): self.theme.accent,
+            (40, 60): self.theme.warning,
+            (0, 40): self.theme.danger
+        }
+        
+        color = next(c for (low, high), c in color_map.items() if low <= strength < high)
 
-        # Animierte Aktualisierung der Progress Bar
+        # Batch-Update für bessere Performance
+        relwidth = strength / 100
+        self.strength_bar.place_configure(relwidth=relwidth)
         self.strength_bar.config(bg=color)
-        self.strength_bar.place(relwidth=strength / 100)
-
         self.strength_label.config(text=description, fg=color)
 
     def _copy_password(self) -> None:
@@ -701,13 +725,17 @@ class PasswordGeneratorGUI:
             try:
                 self.root.clipboard_clear()
                 self.root.clipboard_append(password)
+                self.root.update()  # Clipboard sofort flushen
 
-                # Visuelles Feedback
-                original = self.copy_button.cget("text")
-                original_bg = self.copy_button.cget("bg")
+                # Visuelles Feedback - gecachte Werte
+                if not hasattr(self, '_copy_button_original_text'):
+                    self._copy_button_original_text = self.copy_button.cget("text")
+                    self._copy_button_original_bg = self.copy_button.cget("bg")
+                
                 self.copy_button.config(text="✓ Kopiert!", bg=self.theme.success)
                 self.root.after(1500, lambda: self.copy_button.config(
-                    text=original, bg=original_bg
+                    text=self._copy_button_original_text, 
+                    bg=self._copy_button_original_bg
                 ))
             except Exception as e:
                 messagebox.showerror(
@@ -718,16 +746,24 @@ class PasswordGeneratorGUI:
 
     def _clear_password(self) -> None:
         """Löscht das angezeigte Passwort."""
+        # Batch-Update für bessere Performance
         self.password_text.config(state=tk.NORMAL)
         self.password_text.delete(1.0, tk.END)
         self.password_text.config(state=tk.DISABLED)
+        
+        # Batch-Button-Update
         self.copy_button.config(state=tk.DISABLED)
         self.clear_button.config(state=tk.DISABLED)
-        self.strength_bar.place(relwidth=0)
+        
+        # Strength-Reset
+        self.strength_bar.place_configure(relwidth=0)
         self.strength_label.config(
             text="Generiere ein Passwort",
             fg=self.theme.text_secondary
         )
+        
+        # Force UI update
+        self.root.update_idletasks()
 
 
 def main() -> None:
