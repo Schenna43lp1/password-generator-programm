@@ -36,19 +36,25 @@ class Theme:
     
     Immutable Dataclass mit allen Farbdefinitionen für das UI.
     """
-    bg_primary: str = "#0f0f23"
-    bg_secondary: str = "#1a1a2e"
-    bg_hover: str = "#252541"
-    bg_dark: str = "#0a0a16"
+    bg_primary: str = "#0a0a1a"
+    bg_secondary: str = "#16162a"
+    bg_tertiary: str = "#1e1e38"
+    bg_hover: str = "#252547"
+    bg_dark: str = "#050510"
     accent: str = "#6366f1"
     accent_hover: str = "#818cf8"
     accent_light: str = "#a5b4fc"
-    text_primary: str = "#f0f0f0"
+    accent_dark: str = "#4f46e5"
+    text_primary: str = "#f8fafc"
     text_secondary: str = "#94a3b8"
-    success: str = "#22c55e"
+    text_muted: str = "#64748b"
+    success: str = "#10b981"
+    success_light: str = "#34d399"
     danger: str = "#ef4444"
     warning: str = "#f59e0b"
+    info: str = "#3b82f6"
     border: str = "#2d3748"
+    border_light: str = "#374151"
     name: str = "dark"
 
 
@@ -57,17 +63,23 @@ class LightTheme(Theme):
     """Light Mode Theme."""
     bg_primary: str = "#f8fafc"
     bg_secondary: str = "#ffffff"
-    bg_hover: str = "#f1f5f9"
-    bg_dark: str = "#e2e8f0"
+    bg_tertiary: str = "#f1f5f9"
+    bg_hover: str = "#e2e8f0"
+    bg_dark: str = "#cbd5e1"
     accent: str = "#6366f1"
     accent_hover: str = "#4f46e5"
     accent_light: str = "#818cf8"
+    accent_dark: str = "#3730a3"
     text_primary: str = "#0f172a"
-    text_secondary: str = "#64748b"
-    success: str = "#10b981"
-    danger: str = "#ef4444"
-    warning: str = "#f59e0b"
-    border: str = "#cbd5e1"
+    text_secondary: str = "#475569"
+    text_muted: str = "#94a3b8"
+    success: str = "#059669"
+    success_light: str = "#10b981"
+    danger: str = "#dc2626"
+    warning: str = "#d97706"
+    info: str = "#2563eb"
+    border: str = "#e2e8f0"
+    border_light: str = "#f1f5f9"
     name: str = "light"
 
 
@@ -344,8 +356,8 @@ class PasswordGeneratorGUI:
     def _setup_window(self) -> None:
         """Initialisiert das Hauptfenster."""
         self.root.title("🔐 Passwort-Generator Pro")
-        self.root.geometry("700x720")
-        self.root.resizable(False, False)
+        self.root.geometry("750x900")
+        self.root.resizable(True, True)
         self.root.configure(bg=self.theme.bg_primary)
         
         # Fenster zentrieren
@@ -353,6 +365,9 @@ class PasswordGeneratorGUI:
         x = (self.root.winfo_screenwidth() // 2) - (self.root.winfo_width() // 2)
         y = (self.root.winfo_screenheight() // 2) - (self.root.winfo_height() // 2)
         self.root.geometry(f"+{x}+{y}")
+        
+        # Minimum Size setzen
+        self.root.minsize(700, 800)
         
         # Icon setzen (falls vorhanden)
         try:
@@ -371,8 +386,27 @@ class PasswordGeneratorGUI:
 
     def _create_widgets(self) -> None:
         """Erstellt alle GUI-Komponenten."""
-        main_frame = tk.Frame(self.root, bg=self.theme.bg_primary, padx=45, pady=40)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # Canvas mit Scrollbar
+        canvas = tk.Canvas(self.root, bg=self.theme.bg_primary, highlightthickness=0)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=canvas.yview, bg=self.theme.bg_secondary)
+        
+        main_frame = tk.Frame(canvas, bg=self.theme.bg_primary, padx=40, pady=30)
+        
+        main_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=main_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Mausrad-Scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         self._create_header(main_frame)
         self._create_length_section(main_frame)
@@ -380,36 +414,50 @@ class PasswordGeneratorGUI:
         self._create_generate_button(main_frame)
         self._create_result_section(main_frame)
         self._create_strength_indicator(main_frame)
+        self._create_footer(main_frame)
 
     def _create_header(self, parent: tk.Frame) -> None:
         """Erstellt Header mit Titel."""
         header = tk.Frame(parent, bg=self.theme.bg_primary)
-        header.pack(pady=(0, 35))
+        header.pack(pady=(0, 25), fill=tk.X)
 
+        # Icon + Title Container
+        title_container = tk.Frame(header, bg=self.theme.bg_primary)
+        title_container.pack()
+        
         tk.Label(
-            header,
-            text="🔐 Passwort-Generator Pro",
-            font=("Segoe UI", 28, "bold"),
+            title_container,
+            text="🔐",
+            font=("Segoe UI", 36),
+            bg=self.theme.bg_primary
+        ).pack(side=tk.LEFT, padx=(0, 12))
+        
+        title_text_frame = tk.Frame(title_container, bg=self.theme.bg_primary)
+        title_text_frame.pack(side=tk.LEFT)
+        
+        tk.Label(
+            title_text_frame,
+            text="Passwort-Generator",
+            font=("Segoe UI", 24, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_primary
-        ).pack()
+        ).pack(anchor=tk.W)
+        
+        tk.Label(
+            title_text_frame,
+            text="Pro Edition",
+            font=("Segoe UI", 12),
+            fg=self.theme.accent_light,
+            bg=self.theme.bg_primary
+        ).pack(anchor=tk.W)
 
         tk.Label(
             header,
             text="Erstelle kryptographisch sichere Passwörter",
-            font=("Segoe UI", 12),
+            font=("Segoe UI", 10),
             fg=self.theme.text_secondary,
             bg=self.theme.bg_primary
-        ).pack(pady=(10, 5))
-        
-        shortcuts_text = "Shortcuts: Ctrl+G=Generieren | Ctrl+C=Kopieren | Ctrl+S=Speichern | Ctrl+H=Historie | Ctrl+T=Theme"
-        tk.Label(
-            header,
-            text=shortcuts_text,
-            font=("Segoe UI", 9),
-            fg=self.theme.accent_light,
-            bg=self.theme.bg_primary
-        ).pack(pady=(5, 0))
+        ).pack(pady=(10, 8))
         
         # Theme Toggle Button
         self.theme_toggle_btn = ModernButton(
@@ -417,58 +465,108 @@ class PasswordGeneratorGUI:
             self.theme,
             text="🌙 Dark Mode" if self.theme.name == "dark" else "☀️ Light Mode",
             command=self._toggle_theme,
-            font=("Segoe UI", 9),
-            bg=self.theme.bg_secondary,
-            fg=self.theme.text_secondary,
+            font=("Segoe UI", 9, "bold"),
+            bg=self.theme.bg_tertiary,
+            fg=self.theme.text_primary,
             pady=6
         )
-        self.theme_toggle_btn.pack(pady=(10, 0))
+        self.theme_toggle_btn.pack(pady=(5, 0))
+        
+        tk.Label(
+            header,
+            text="Strg+G • Strg+C • Strg+S • Strg+H • Strg+T",
+            font=("Segoe UI", 8),
+            fg=self.theme.text_muted,
+            bg=self.theme.bg_primary
+        ).pack(pady=(8, 0))
 
     def _create_length_section(self, parent: tk.Frame) -> None:
         """Erstellt Längen-Slider."""
         container = self._create_section_container(parent)
 
         header = tk.Frame(container, bg=self.theme.bg_secondary)
-        header.pack(fill=tk.X, pady=(0, 15))
+        header.pack(fill=tk.X, pady=(0, 12))
 
+        left_frame = tk.Frame(header, bg=self.theme.bg_secondary)
+        left_frame.pack(side=tk.LEFT)
+        
         length_title = tk.Label(
-            header,
+            left_frame,
             text="📏 Passwortlänge",
-            font=("Segoe UI", 13, "bold"),
+            font=("Segoe UI", 14, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
         )
         length_title.pack(side=tk.LEFT)
-        ToolTip(length_title, "Empfohlen: Mindestens 12 Zeichen für gute Sicherheit", self.theme)
+        ToolTip(length_title, "Empfohlen: 16+ Zeichen für maximale Sicherheit", self.theme)
+        
+        # Badge mit aktuellem Wert
+        right_frame = tk.Frame(header, bg=self.theme.bg_secondary)
+        right_frame.pack(side=tk.RIGHT)
+        
+        tk.Label(
+            right_frame,
+            text="Zeichen:",
+            font=("Segoe UI", 10),
+            fg=self.theme.text_secondary,
+            bg=self.theme.bg_secondary
+        ).pack(side=tk.LEFT, padx=(0, 8))
 
         self.length_var = tk.IntVar(value=self.generator.DEFAULT_LENGTH)
+        
+        # Styled Badge
+        badge_frame = tk.Frame(right_frame, bg=self.theme.accent, padx=12, pady=6)
+        badge_frame.pack(side=tk.LEFT)
+        
         self.length_label = tk.Label(
-            header,
+            badge_frame,
             text=str(self.generator.DEFAULT_LENGTH),
             font=("Segoe UI", 14, "bold"),
-            fg=self.theme.accent,
-            bg=self.theme.bg_secondary,
-            width=4
+            fg="white",
+            bg=self.theme.accent
         )
-        self.length_label.pack(side=tk.RIGHT)
+        self.length_label.pack()
 
+        # Slider mit besserer Gestaltung
+        slider_frame = tk.Frame(container, bg=self.theme.bg_hover, pady=5, padx=5)
+        slider_frame.pack(fill=tk.X)
+        
         self.length_slider = tk.Scale(
-            container,
+            slider_frame,
             from_=self.generator.MIN_LENGTH,
             to=self.generator.MAX_LENGTH,
             variable=self.length_var,
             orient=tk.HORIZONTAL,
             command=self._update_length_label,
-            bg=self.theme.bg_secondary,
+            bg=self.theme.bg_hover,
             fg=self.theme.text_primary,
-            troughcolor=self.theme.bg_hover,
+            troughcolor=self.theme.bg_dark,
             activebackground=self.theme.accent,
             highlightthickness=0,
             bd=0,
-            showvalue=0,
-            length=550
+            showvalue=0
         )
-        self.length_slider.pack(fill=tk.X, padx=5)
+        self.length_slider.pack(fill=tk.X, padx=8)
+        
+        # Min/Max Labels
+        range_frame = tk.Frame(container, bg=self.theme.bg_secondary)
+        range_frame.pack(fill=tk.X, pady=(8, 0))
+        
+        tk.Label(
+            range_frame,
+            text=f"Min: {self.generator.MIN_LENGTH}",
+            font=("Segoe UI", 8),
+            fg=self.theme.text_muted,
+            bg=self.theme.bg_secondary
+        ).pack(side=tk.LEFT)
+        
+        tk.Label(
+            range_frame,
+            text=f"Max: {self.generator.MAX_LENGTH}",
+            font=("Segoe UI", 8),
+            fg=self.theme.text_muted,
+            bg=self.theme.bg_secondary
+        ).pack(side=tk.RIGHT)
 
     def _create_options_section(self, parent: tk.Frame) -> None:
         """Erstellt Checkbox-Optionen."""
@@ -476,41 +574,50 @@ class PasswordGeneratorGUI:
 
         # Preset-Auswahl Header
         preset_header = tk.Frame(container, bg=self.theme.bg_secondary)
-        preset_header.pack(fill=tk.X, pady=(0, 15))
+        preset_header.pack(fill=tk.X, pady=(0, 10))
         
         tk.Label(
             preset_header,
-            text="🎯 Vorlagen",
-            font=("Segoe UI", 13, "bold"),
+            text="🎯 Schnellvorlagen",
+            font=("Segoe UI", 12, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
-        ).pack(side=tk.LEFT)
+        ).pack(anchor=tk.W)
         
-        # Preset Buttons
+        # Preset Buttons - kompakter
         preset_frame = tk.Frame(container, bg=self.theme.bg_secondary)
-        preset_frame.pack(fill=tk.X, pady=(0, 20))
+        preset_frame.pack(fill=tk.X, pady=(0, 15))
         
-        for preset_name in PasswordPreset.PRESETS.keys():
+        preset_icons = {
+            "Standard": "⭐",
+            "Einfach": "👍",
+            "Komplex": "🔒",
+            "PIN": "🔢",
+            "Passphrase": "💬"
+        }
+        
+        for i, preset_name in enumerate(PasswordPreset.PRESETS.keys()):
+            icon = preset_icons.get(preset_name, "⚙️")
             btn = ModernButton(
                 preset_frame,
                 self.theme,
-                text=preset_name,
+                text=f"{icon} {preset_name}",
                 command=lambda p=preset_name: self._apply_preset(p),
-                font=("Segoe UI", 9),
-                bg=self.theme.bg_hover,
+                font=("Segoe UI", 9, "bold"),
+                bg=self.theme.bg_tertiary,
                 fg=self.theme.text_primary,
-                pady=6
+                pady=7
             )
-            btn.pack(side=tk.LEFT, padx=2)
+            btn.pack(side=tk.LEFT, padx=2, expand=True, fill=tk.X)
             ToolTip(btn, f"Lädt Vorlage: {preset_name}", self.theme)
 
         tk.Label(
             container,
             text="🔤 Zeichenarten",
-            font=("Segoe UI", 13, "bold"),
+            font=("Segoe UI", 12, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
-        ).pack(anchor=tk.W, pady=(15, 15))
+        ).pack(anchor=tk.W, pady=(10, 10))
 
         tooltips = {
             CharType.UPPERCASE: "Verwende Großbuchstaben für mehr Komplexität",
@@ -528,7 +635,7 @@ class PasswordGeneratorGUI:
                 container,
                 text=f"  {char_type.label} ({char_type.hint})",
                 variable=var,
-                font=("Segoe UI", 11),
+                font=("Segoe UI", 10),
                 fg=self.theme.text_primary,
                 bg=self.theme.bg_secondary,
                 activebackground=self.theme.bg_secondary,
@@ -538,13 +645,17 @@ class PasswordGeneratorGUI:
                 bd=0,
                 cursor="hand2"
             )
-            cb.pack(anchor=tk.W, pady=6)
+            cb.pack(anchor=tk.W, pady=4)
             ToolTip(cb, tooltips[char_type], self.theme)
 
     def _create_generate_button(self, parent: tk.Frame) -> None:
         """Erstellt Generieren-Button."""
+        button_container = tk.Frame(parent, bg=self.theme.bg_primary)
+        button_container.pack(fill=tk.X, pady=(20, 0))
+        
+        # Großer, hervorgehobener Button
         self.gen_button = ModernButton(
-            parent,
+            button_container,
             self.theme,
             text="⚡ PASSWORT GENERIEREN",
             command=self._generate_password,
@@ -554,8 +665,8 @@ class PasswordGeneratorGUI:
             hover_color=self.theme.accent_hover,
             pady=16
         )
-        self.gen_button.pack(fill=tk.X, pady=(30, 0))
-        ToolTip(self.gen_button, "Oder drücke Ctrl+G", self.theme)
+        self.gen_button.pack(fill=tk.X)
+        ToolTip(self.gen_button, "Strg+G", self.theme)
 
     def _create_result_section(self, parent: tk.Frame) -> None:
         """Erstellt Ergebnis-Anzeige."""
@@ -567,7 +678,7 @@ class PasswordGeneratorGUI:
             font=("Segoe UI", 12, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
-        ).pack(anchor=tk.W, pady=(0, 12))
+        ).pack(anchor=tk.W, pady=(0, 10))
 
         # Text Widget mit Scrollbar
         text_frame = tk.Frame(container, bg=self.theme.bg_hover)
@@ -594,7 +705,15 @@ class PasswordGeneratorGUI:
         self.password_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.password_text.yview)
 
-        # Action Buttons
+        # Primary Action Buttons
+        tk.Label(
+            container,
+            text="Aktionen",
+            font=("Segoe UI", 9, "bold"),
+            fg=self.theme.text_secondary,
+            bg=self.theme.bg_secondary
+        ).pack(anchor=tk.W, pady=(8, 6))
+        
         btn_frame = tk.Frame(container, bg=self.theme.bg_secondary)
         btn_frame.pack(fill=tk.X)
 
@@ -603,85 +722,93 @@ class PasswordGeneratorGUI:
             self.theme,
             text="📋 Kopieren",
             command=self._copy_password,
-            font=("Segoe UI", 11, "bold"),
-            bg=self.theme.bg_hover,
-            fg=self.theme.text_primary,
+            font=("Segoe UI", 10, "bold"),
+            bg=self.theme.success,
+            fg="white",
+            hover_color=self.theme.success_light,
             state=tk.DISABLED,
-            pady=12
+            pady=10
         )
-        self.copy_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        ToolTip(self.copy_button, "Kopiert das Passwort in die Zwischenablage", self.theme)
+        self.copy_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
+        ToolTip(self.copy_button, "Strg+C", self.theme)
 
+        self.save_button = ModernButton(
+            btn_frame,
+            self.theme,
+            text="💾 Speichern",
+            command=self._save_password,
+            font=("Segoe UI", 10, "bold"),
+            bg=self.theme.info,
+            fg="white",
+            state=tk.DISABLED,
+            pady=10
+        )
+        self.save_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
+        ToolTip(self.save_button, "Strg+S", self.theme)
+        
         self.clear_button = ModernButton(
             btn_frame,
             self.theme,
             text="🗑️ Löschen",
             command=self._clear_password,
-            font=("Segoe UI", 11, "bold"),
-            bg=self.theme.bg_hover,
-            fg=self.theme.text_primary,
+            font=("Segoe UI", 10, "bold"),
+            bg=self.theme.danger,
+            fg="white",
             state=tk.DISABLED,
-            pady=12
+            pady=10
         )
-        self.clear_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        ToolTip(self.clear_button, "Löscht das angezeigte Passwort", self.theme)
+        self.clear_button.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ToolTip(self.clear_button, "Löscht Passwort", self.theme)
         
-        # Weitere Buttons
+        # Secondary Button
         btn_frame2 = tk.Frame(container, bg=self.theme.bg_secondary)
         btn_frame2.pack(fill=tk.X, pady=(8, 0))
-        
-        self.save_button = ModernButton(
-            btn_frame2,
-            self.theme,
-            text="💾 Speichern",
-            command=self._save_password,
-            font=("Segoe UI", 11, "bold"),
-            bg=self.theme.bg_hover,
-            fg=self.theme.text_primary,
-            state=tk.DISABLED,
-            pady=12
-        )
-        self.save_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        ToolTip(self.save_button, "Speichert das Passwort in einer Datei (Ctrl+S)", self.theme)
         
         self.history_button = ModernButton(
             btn_frame2,
             self.theme,
             text="📜 Historie",
             command=self._show_history,
-            font=("Segoe UI", 11, "bold"),
-            bg=self.theme.bg_hover,
+            font=("Segoe UI", 9, "bold"),
+            bg=self.theme.bg_tertiary,
             fg=self.theme.text_primary,
-            pady=12
+            pady=8
         )
-        self.history_button.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ToolTip(self.history_button, "Zeigt die letzten 10 generierten Passwörter (Ctrl+H)", self.theme)
+        self.history_button.pack(fill=tk.X)
+        ToolTip(self.history_button, "Strg+H", self.theme)
 
     def _create_strength_indicator(self, parent: tk.Frame) -> None:
         """Erstellt Stärke-Anzeige."""
-        container = tk.Frame(parent, bg=self.theme.bg_secondary, pady=18, padx=20)
-        container.pack(fill=tk.X, pady=(25, 0))
+        container = tk.Frame(parent, bg=self.theme.bg_secondary, pady=15, padx=20)
+        container.pack(fill=tk.X, pady=(20, 0))
 
         tk.Label(
             container,
-            text="⚡ Passwortstärke",
-            font=("Segoe UI", 11, "bold"),
+            text="⚡ Sicherheitsanalyse",
+            font=("Segoe UI", 12, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
         ).pack(anchor=tk.W, pady=(0, 10))
 
-        # Progress Bar mit Border
-        progress_container = tk.Frame(container, bg=self.theme.border, height=12)
-        progress_container.pack(fill=tk.X, pady=(0, 10))
+        # Progress Bar
+        progress_outer = tk.Frame(container, bg=self.theme.border, height=14)
+        progress_outer.pack(fill=tk.X, pady=(0, 10))
         
-        progress_bg = tk.Frame(progress_container, bg=self.theme.bg_hover, height=10)
-        progress_bg.place(x=1, y=1, relwidth=0.998, relheight=0.8)
+        progress_bg = tk.Frame(progress_outer, bg=self.theme.bg_dark, height=12)
+        progress_bg.place(x=1, y=1, relwidth=0.997, relheight=0.85)
 
-        self.strength_bar = tk.Frame(progress_bg, bg=self.theme.text_secondary, height=10)
+        self.strength_bar = tk.Frame(progress_bg, bg=self.theme.text_secondary, height=12)
         self.strength_bar.place(x=0, y=0, relwidth=0, relheight=1)
 
+        # Info Container
+        info_frame = tk.Frame(container, bg=self.theme.bg_secondary)
+        info_frame.pack(fill=tk.X)
+        
+        left_info = tk.Frame(info_frame, bg=self.theme.bg_secondary)
+        left_info.pack(side=tk.LEFT)
+        
         self.strength_label = tk.Label(
-            container,
+            left_info,
             text="Generiere ein Passwort",
             font=("Segoe UI", 11, "bold"),
             fg=self.theme.text_secondary,
@@ -691,30 +818,56 @@ class PasswordGeneratorGUI:
         
         # Entropy Label
         self.entropy_label = tk.Label(
-            container,
+            left_info,
             text="",
-            font=("Segoe UI", 9),
-            fg=self.theme.text_secondary,
+            font=("Segoe UI", 8),
+            fg=self.theme.text_muted,
             bg=self.theme.bg_secondary
         )
-        self.entropy_label.pack(anchor=tk.W, pady=(5, 0))
+        self.entropy_label.pack(anchor=tk.W, pady=(2, 0))
+    
+    def _create_footer(self, parent: tk.Frame) -> None:
+        """Erstellt Footer mit Statistiken."""
+        footer = tk.Frame(parent, bg=self.theme.bg_primary)
+        footer.pack(fill=tk.X, pady=(15, 10))
+        
+        divider = tk.Frame(footer, bg=self.theme.border_light, height=1)
+        divider.pack(fill=tk.X, pady=(0, 10))
+        
+        self.stats_label = tk.Label(
+            footer,
+            text="0 Passwörter generiert • © 2025",
+            font=("Segoe UI", 8),
+            fg=self.theme.text_muted,
+            bg=self.theme.bg_primary
+        )
+        self.stats_label.pack()
 
     def _create_section_container(self, parent: tk.Frame) -> tk.Frame:
         """Erstellt einen Section-Container."""
+        # Outer Border Container (für Shadow-Effekt)
+        outer_frame = tk.Frame(
+            parent,
+            bg=self.theme.bg_dark,
+            padx=2,
+            pady=2
+        )
+        outer_frame.pack(fill=tk.X, pady=(0, 18))
+        
         # Border Container
         border_frame = tk.Frame(
-            parent,
-            bg=self.theme.border,
+            outer_frame,
+            bg=self.theme.border_light,
             padx=1,
             pady=1
         )
-        border_frame.pack(fill=tk.X, pady=(0, 22))
+        border_frame.pack(fill=tk.X)
         
         # Inner Container
         container = tk.Frame(
             border_frame,
             bg=self.theme.bg_secondary,
-            pady=20,
+            pady=18,
             padx=20
         )
         container.pack(fill=tk.X)
@@ -735,6 +888,19 @@ class PasswordGeneratorGUI:
         if not hasattr(self, '_last_length_value') or self._last_length_value != int_value:
             self._last_length_value = int_value
             self.length_label.config(text=str(int_value))
+            
+            # Badge-Farbe basierend auf Länge
+            if int_value < 12:
+                badge_color = self.theme.danger
+            elif int_value < 16:
+                badge_color = self.theme.warning
+            elif int_value < 20:
+                badge_color = self.theme.success
+            else:
+                badge_color = self.theme.accent
+            
+            self.length_label.master.config(bg=badge_color)
+            self.length_label.config(bg=badge_color)
 
     def _generate_password(self) -> None:
         """Generiert ein neues Passwort und zeigt es in einem Popup an."""
@@ -758,6 +924,12 @@ class PasswordGeneratorGUI:
                 self.password_history.pop(0)
             
             self.current_password = password
+            
+            # Footer-Statistik aktualisieren
+            count = len(self.password_history)
+            self.stats_label.config(
+                text=f"{count} Passwörter generiert • © 2025"
+            )
             
             # Passwort im Hauptfenster anzeigen
             self.password_text.config(state=tk.NORMAL)
