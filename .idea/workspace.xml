@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="44ec98d8-f7a3-497a-9c08-c0a024eecb3d" name="Changes" comment="V1.62" />
+    <list default="true" id="44ec98d8-f7a3-497a-9c08-c0a024eecb3d" name="Changes" comment="V1.64" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -89,6 +89,7 @@
       <workItem from="1764065622994" duration="1986000" />
       <workItem from="1764068098276" duration="102000" />
       <workItem from="1764242359786" duration="1216000" />
+      <workItem from="1764658861655" duration="337000" />
     </task>
     <task id="LOCAL-00001" summary="v0.1">
       <option name="closed" value="true" />
@@ -130,7 +131,23 @@
       <option name="project" value="LOCAL" />
       <updated>1764244346027</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="V1.63">
+      <option name="closed" value="true" />
+      <created>1764658919668</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1764658919668</updated>
+    </task>
+    <task id="LOCAL-00007" summary="V1.64">
+      <option name="closed" value="true" />
+      <created>1764659198965</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1764659198965</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -142,9 +159,11 @@
     <MESSAGE value="v1.1" />
     <MESSAGE value="v1.2" />
     <MESSAGE value="V1.61" />
-    <option name="LAST_COMMIT_MESSAGE" value="V1.61" />
+    <MESSAGE value="V1.63" />
+    <MESSAGE value="V1.64" />
+    <option name="LAST_COMMIT_MESSAGE" value="V1.64" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/PythonProject1$main.coverage" NAME="main Coverage Results" MODIFIED="1764055673030" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PythonProject1$main.coverage" NAME="main Coverage Results" MODIFIED="1764659207150" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
