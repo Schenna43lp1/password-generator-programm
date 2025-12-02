@@ -63,8 +63,8 @@ class Theme:
 class PasswordGenerator:
     """Kern-Logik für Passwort-Generierung."""
 
-    MIN_LENGTH = 8
-    MAX_LENGTH = 100
+    MIN_LENGTH = 6
+    MAX_LENGTH = 1000
     DEFAULT_LENGTH = 16
     
     # Cache für Character-Pools
@@ -195,9 +195,10 @@ class PasswordGenerator:
             return strength, "Stark 👍"
         elif strength >= 40:
             return strength, "Mittel ⚠️"
-        else:
+        elif strength >= 30:
             return strength, "Schwach ⚠️"
-
+        else:
+            return strength, "Sehr Schwach"
 
 class PasswordPreset:
     """Vordefinierte Einstellungen für verschiedene Anwendungsfälle."""
@@ -647,7 +648,7 @@ class PasswordGeneratorGUI:
         self.gen_button = ModernButton(
             button_container,
             self.theme,
-            text="⚡ PASSWORT GENERIEREN",
+            text="PASSWORT GENERIEREN",
             command=self._generate_password,
             font=("Segoe UI", 13, "bold"),
             bg=self.theme.accent,
@@ -664,7 +665,7 @@ class PasswordGeneratorGUI:
 
         tk.Label(
             container,
-            text="💾 Generiertes Passwort",
+            text="Generiertes Passwort",
             font=("Segoe UI", 12, "bold"),
             fg=self.theme.text_primary,
             bg=self.theme.bg_secondary
