@@ -58,29 +58,6 @@ class Theme:
     name: str = "dark"
 
 
-@dataclass(frozen=True)
-class LightTheme(Theme):
-    """Light Mode Theme."""
-    bg_primary: str = "#f8fafc"
-    bg_secondary: str = "#ffffff"
-    bg_tertiary: str = "#f1f5f9"
-    bg_hover: str = "#e2e8f0"
-    bg_dark: str = "#cbd5e1"
-    accent: str = "#6366f1"
-    accent_hover: str = "#4f46e5"
-    accent_light: str = "#818cf8"
-    accent_dark: str = "#3730a3"
-    text_primary: str = "#0f172a"
-    text_secondary: str = "#475569"
-    text_muted: str = "#94a3b8"
-    success: str = "#059669"
-    success_light: str = "#10b981"
-    danger: str = "#dc2626"
-    warning: str = "#d97706"
-    info: str = "#2563eb"
-    border: str = "#e2e8f0"
-    border_light: str = "#f1f5f9"
-    name: str = "light"
 
 
 class PasswordGenerator:
